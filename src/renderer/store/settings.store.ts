@@ -525,6 +525,7 @@ export const GeneralSettingsSchema = z.object({
     autoSave: AutoSaveSchema,
     blurExplicitImages: z.boolean(),
     buttonSize: z.number(),
+    clearUpNextOnShuffle: z.boolean(),
     collections: z.array(CollectionSchema),
     combinedLyricsAndVisualizer: z.boolean(),
     confirmQueueChanges: z.boolean(),
@@ -546,6 +547,7 @@ export const GeneralSettingsSchema = z.object({
         sidebar: z.number(),
         table: z.number(),
     }),
+    keepCurrentOnPlaylistShuffle: z.boolean(),
     language: z.string(),
     lastFM: z.boolean(),
     lastfmApiKey: z.string(),
@@ -1350,6 +1352,7 @@ const initialState: SettingsState = {
         },
         blurExplicitImages: false,
         buttonSize: 15,
+        clearUpNextOnShuffle: false,
         collections: [],
         combinedLyricsAndVisualizer: false,
         confirmQueueChanges: true,
@@ -1371,6 +1374,7 @@ const initialState: SettingsState = {
             sidebar: 400,
             table: 80,
         },
+        keepCurrentOnPlaylistShuffle: false,
         language: 'en',
         lastFM: true,
         lastfmApiKey: '',
@@ -2933,10 +2937,15 @@ export const useSettingsStore = createWithEqualityFn<SettingsSlice>()(
                     });
                 }
 
+                if (version < 35) {
+                    state.general.clearUpNextOnShuffle ??= false;
+                    state.general.keepCurrentOnPlaylistShuffle ??= false;
+                }
+
                 return persistedState;
             },
             name: 'store_settings',
-            version: 34,
+            version: 35,
         },
     ),
 );

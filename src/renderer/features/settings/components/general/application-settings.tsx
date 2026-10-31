@@ -413,6 +413,42 @@ export const ApplicationSettings = memo(() => {
         {
             control: (
                 <Switch
+                    aria-label={t('setting.clearUpNextOnShuffle')}
+                    checked={settings.clearUpNextOnShuffle}
+                    onChange={(event) => {
+                        setSettings({
+                            general: {
+                                ...settings,
+                                clearUpNextOnShuffle: event.currentTarget.checked,
+                            },
+                        });
+                    }}
+                />
+            ),
+            description: t('setting.clearUpNextOnShuffle', { context: 'description' }),
+            title: t('setting.clearUpNextOnShuffle'),
+        },
+        {
+            control: (
+                <Switch
+                    aria-label={t('setting.keepCurrentOnPlaylistShuffle')}
+                    checked={settings.keepCurrentOnPlaylistShuffle}
+                    onChange={(event) => {
+                        setSettings({
+                            general: {
+                                ...settings,
+                                keepCurrentOnPlaylistShuffle: event.currentTarget.checked,
+                            },
+                        });
+                    }}
+                />
+            ),
+            description: t('setting.keepCurrentOnPlaylistShuffle', { context: 'description' }),
+            title: t('setting.keepCurrentOnPlaylistShuffle'),
+        },
+        {
+            control: (
+                <Switch
                     aria-label={t('setting.homeFeature')}
                     defaultChecked={settings.homeFeature}
                     onChange={(e) =>

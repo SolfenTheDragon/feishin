@@ -81,6 +81,7 @@ interface Actions {
     setVolume: (volume: number) => void;
     shuffle: () => void;
     shuffleAll: () => void;
+    shuffleKeepingCurrent: (items: Song[]) => void;
     shuffleSelected: (items: QueueSong[]) => void;
     toggleRepeat: () => void;
     toggleShuffle: () => void;
@@ -341,6 +342,8 @@ function regenerateShuffledIndexesIfNeeded(state: {
 }
 
 const isUpNextQueueEnabled = () => useSettingsStore.getState().general.upNextQueue;
+
+const clearUpNextOnShuffle = () => useSettingsStore.getState().general.clearUpNextOnShuffle;
 
 const sameIds = <T>(a: T[], b: T[]) => a.length === b.length && a.every((v, i) => v === b[i]);
 
@@ -778,7 +781,8 @@ export const usePlayerStoreBase = createWithEqualityFn<PlayerState>()(
                                 state.player.status = PlayerStatus.PLAYING;
                                 state.player.playerNum = 1;
                                 setTimestampStore(0);
-                                // Up Next carries over to the new queue
+                                // Up Next carries over to the new queue unless the setting clears it
+                                if (clearUpNextOnShuffle()) state.queue.priority = [];
                                 state.queue.default = [...shuffledIds, ...state.queue.priority];
 
                                 // Always maintain shuffled array when using Play.SHUFFLE
@@ -1855,6 +1859,40 @@ export const usePlayerStoreBase = createWithEqualityFn<PlayerState>()(
                         syncUpNext(state);
                     });
                 },
+                shuffleKeepingCurrent: (items) => {
+                    const current = get().getCurrentSong();
+                    if (!current) return;
+
+                    const newItems = items
+                        .filter((item) => item.id !== current.id)
+                        .map(toQueueSong);
+
+                    set((state) => {
+                        newItems.forEach((item) => {
+                            state.queue.songs[item._uniqueId] = item;
+                        });
+
+                        // Same queue entry stays at the top, so playback continues uninterrupted
+                        const ids = [
+                            current._uniqueId,
+                            ...shuffleInPlace(newItems.map((item) => item._uniqueId)),
+                        ];
+                        const priority = clearUpNextOnShuffle()
+                            ? []
+                            : state.queue.priority.filter((id) => id !== current._uniqueId);
+
+                        state.queue.default = [...ids, ...priority];
+                        state.queue.priority = priority;
+                        state.queue.shuffled = [
+                            0,
+                            ...shuffleInPlace(
+                                Array.from({ length: ids.length - 1 }, (_, i) => i + 1),
+                            ),
+                        ];
+                        state.player.index = 0;
+                        syncUpNext(state);
+                    });
+                },
                 shuffleSelected: (items: QueueSong[]) => {
                     set((state) => {
                         const itemUniqueIds = items.map((item) => item._uniqueId);
@@ -2064,6 +2102,7 @@ export const usePlayerActions = () => {
             setVolume: state.setVolume,
             shuffle: state.shuffle,
             shuffleAll: state.shuffleAll,
+            shuffleKeepingCurrent: state.shuffleKeepingCurrent,
             shuffleSelected: state.shuffleSelected,
             toggleRepeat: state.toggleRepeat,
             toggleShuffle: state.toggleShuffle,

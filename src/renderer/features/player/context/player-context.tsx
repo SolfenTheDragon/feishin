@@ -21,6 +21,7 @@ import {
     AddToQueueOptions,
     AddToQueueType,
     usePlayerActions,
+    usePlayerStoreBase,
     useSettingsStore,
     useSettingsStoreActions,
 } from '/@/renderer/store';
@@ -160,6 +161,13 @@ const getRootQueryKey = (itemType: LibraryItem, serverId: string) => {
     }
 };
 
+// Setting: shuffling the playlist the current song came from keeps that song playing at the top
+const shouldKeepCurrentOnShuffle = (type: AddToQueueType, contextPlaylistId: null | string) =>
+    type === Play.SHUFFLE &&
+    !!contextPlaylistId &&
+    useSettingsStore.getState().general.keepCurrentOnPlaylistShuffle &&
+    usePlayerStoreBase.getState().getCurrentSong()?._contextPlaylistId === contextPlaylistId;
+
 const isReplaceQueueType = (type: AddToQueueType): boolean => {
     if (typeof type === 'object') return false;
     return type === Play.NOW || type === Play.SHUFFLE;
@@ -287,7 +295,9 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
             }
 
             const addToQueue = () => {
-                if (typeof type === 'object' && 'edge' in type && type.edge !== null) {
+                if (shouldKeepCurrentOnShuffle(type, resolvedContextId)) {
+                    storeActions.shuffleKeepingCurrent(filteredData);
+                } else if (typeof type === 'object' && 'edge' in type && type.edge !== null) {
                     const edge = type.edge === 'top' ? 'top' : 'bottom';
 
                     logger.debug('Added to queue by data', {
@@ -410,7 +420,9 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
                 }
 
                 const addToQueue = () => {
-                    if (typeof type === 'object' && 'edge' in type && type.edge !== null) {
+                    if (shouldKeepCurrentOnShuffle(type, resolvedContextId)) {
+                        storeActions.shuffleKeepingCurrent(filteredSongs);
+                    } else if (typeof type === 'object' && 'edge' in type && type.edge !== null) {
                         const edge = type.edge === 'top' ? 'top' : 'bottom';
                         storeActions.addToQueueByUniqueId(
                             filteredSongs,
